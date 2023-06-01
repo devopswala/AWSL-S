@@ -1,11 +1,11 @@
 pipeline {
-    
+
 	agent any
-/*	
+/*
 	tools {
         maven "maven3"
     }
-*/	
+*/
     environment {
         NEXUS_VERSION = "nexus3"
         NEXUS_PROTOCOL = "http"
@@ -15,9 +15,9 @@ pipeline {
         NEXUS_CREDENTIAL_ID = "nexuslogin"
         ARTVERSION = "${env.BUILD_ID}"
     }
-	
+
     stages{
-        
+
         stage('BUILD'){
             steps {
                 sh 'mvn clean install -DskipTests'
@@ -41,7 +41,7 @@ pipeline {
                 sh 'mvn verify -DskipUnitTests'
             }
         }
-		
+
         stage ('CODE ANALYSIS WITH CHECKSTYLE'){
             steps {
                 sh 'mvn checkstyle:checkstyle'
@@ -54,7 +54,7 @@ pipeline {
         }
 
         stage('CODE ANALYSIS with SONARQUBE') {
-          
+
 		  environment {
              scannerHome = tool 'sonarscanner4'
           }
@@ -65,7 +65,7 @@ pipeline {
                    -Dsonar.projectName=vprofile-repo \
                    -Dsonar.projectVersion=1.0 \
                    -Dsonar.sources=src/ \
-                   -Dsonar.java.binaries=target/test-classes/com/visualpathit/account/controllerTest/ \
+                   -Dsonar.java.binaries=target/test-classes/com/hridak/account/controllerTest/ \
                    -Dsonar.junit.reportsPath=target/surefire-reports/ \
                    -Dsonar.jacoco.reportsPath=target/jacoco.exec \
                    -Dsonar.java.checkstyle.reportPaths=target/checkstyle-result.xml'''
@@ -106,7 +106,7 @@ pipeline {
                                 type: "pom"]
                             ]
                         );
-                    } 
+                    }
 		    else {
                         error "*** File: ${artifactPath}, could not be found";
                     }
