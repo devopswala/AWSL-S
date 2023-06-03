@@ -1,4 +1,4 @@
-package com.hridak.account.modelTest;
+package com.visualpathit.account.modelTest;
 
 import junit.framework.Assert;
 
@@ -9,8 +9,8 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.hridak.account.model.Role;
-import com.hridak.account.model.User;
+import com.visualpathit.account.model.Role;
+import com.visualpathit.account.model.User;
 
 /** {@author waheedk} !*/
 public class UserTest {
