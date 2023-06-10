@@ -1,121 +1,68 @@
 pipeline {
-    
-	agent any
-/*	
-	tools {
-        maven "maven3"
-    }
-*/	
-    environment {
-        NEXUS_VERSION = "nexus3"
-        NEXUS_PROTOCOL = "http"
-        NEXUS_URL = "172.31.40.209:8081"
-        NEXUS_REPOSITORY = "vprofile-release"
-	NEXUS_REPO_ID    = "vprofile-release"
-        NEXUS_CREDENTIAL_ID = "nexuslogin"
-        ARTVERSION = "${env.BUILD_ID}"
-    }
-	
-    stages{
-        
-        stage('BUILD'){
-            steps {
-                sh 'mvn clean install -DskipTests'
-            }
-            post {
-                success {
-                    echo 'Now Archiving...'
-                    archiveArtifacts artifacts: '**/target/*.war'
-                }
-            }
-        }
+    agent any
 
-	stage('UNIT TEST'){
-            steps {
-                sh 'mvn test'
-            }
-        }
+    tools {
+        // Install the Maven version configured as "M3" and add it to the path.
+        maven "MAVEN"
+    }
 
-	stage('INTEGRATION TEST'){
+    stages {
+        stage('Build') {
             steps {
-                sh 'mvn verify -DskipUnitTests'
+                // Get some code from a GitHub repository
+                git branch: 'main', url: 'https://github.com/devopswala/AWSL-S.git'
+
+                // Run Maven on a Unix agent.
+                sh "mvn clean install"
+
+                // To run Maven on a Windows agent, use
+                // bat "mvn -Dmaven.test.failure.ignore=true clean package"
             }
         }
-		
-        stage ('CODE ANALYSIS WITH CHECKSTYLE'){
+		stage('Code Analysis with CheckStyle') {
             steps {
                 sh 'mvn checkstyle:checkstyle'
             }
-            post {
+		    post {
                 success {
-                    echo 'Generated Analysis Result'
+                    archiveArtifacts 'target/*.war'
                 }
             }
         }
-
-        stage('CODE ANALYSIS with SONARQUBE') {
-          
-		  environment {
-             scannerHome = tool 'sonarscanner4'
-          }
-
-          steps {
-            withSonarQubeEnv('sonar-pro') {
-               sh '''${scannerHome}/bin/sonar-scanner -Dsonar.projectKey=vprofile \
-                   -Dsonar.projectName=vprofile-repo \
-                   -Dsonar.projectVersion=1.0 \
-                   -Dsonar.sources=src/ \
-                   -Dsonar.java.binaries=target/test-classes/com/hridak/account/controllerTest/ \
-                   -Dsonar.junit.reportsPath=target/surefire-reports/ \
-                   -Dsonar.jacoco.reportsPath=target/jacoco.exec \
-                   -Dsonar.java.checkstyle.reportPaths=target/checkstyle-result.xml'''
+        stage('Sonar Scan') {
+            environment {
+                scannerHome = tool 'Sonar'
             }
-
-            timeout(time: 10, unit: 'MINUTES') {
-               waitForQualityGate abortPipeline: true
-            }
-          }
-        }
-
-        stage("Publish to Nexus Repository Manager") {
             steps {
-                script {
-                    pom = readMavenPom file: "pom.xml";
-                    filesByGlob = findFiles(glob: "target/*.${pom.packaging}");
-                    echo "${filesByGlob[0].name} ${filesByGlob[0].path} ${filesByGlob[0].directory} ${filesByGlob[0].length} ${filesByGlob[0].lastModified}"
-                    artifactPath = filesByGlob[0].path;
-                    artifactExists = fileExists artifactPath;
-                    if(artifactExists) {
-                        echo "*** File: ${artifactPath}, group: ${pom.groupId}, packaging: ${pom.packaging}, version ${pom.version} ARTVERSION";
-                        nexusArtifactUploader(
-                            nexusVersion: NEXUS_VERSION,
-                            protocol: NEXUS_PROTOCOL,
-                            nexusUrl: NEXUS_URL,
-                            groupId: pom.groupId,
-                            version: ARTVERSION,
-                            repository: NEXUS_REPOSITORY,
-                            credentialsId: NEXUS_CREDENTIAL_ID,
-                            artifacts: [
-                                [artifactId: pom.artifactId,
-                                classifier: '',
-                                file: artifactPath,
-                                type: pom.packaging],
-                                [artifactId: pom.artifactId,
-                                classifier: '',
-                                file: "pom.xml",
-                                type: "pom"]
-                            ]
-                        );
-                    } 
-		    else {
-                        error "*** File: ${artifactPath}, could not be found";
-                    }
+                withSonarQubeEnv('SonarServer') {
+                    sh '''${scannerHome}/bin/sonar-scanner -Dsonar.projectKey=hridak \
+                    -Dsonar.projectName=Hridak \
+                    -Dsonar.projectVersion=1.0 \
+                    -Dsonar.sources=src/ \
+                    -Dsonar.java.binaries=target/test-classes/com/hridak/account/controllerTest/ \
+                    -Dsonar.junit.reportsPath=target/surefire-reports/ \
+                    -Dsonar.jacoco.reportsPath=target/jacoco.exec \
+                    -Dsonar.checkstyle.reportsPath=target/checkstyle-result.xml'''
+                }
+                timeout( time: 10, unit: 'MINUTES'){
+                    waitForQualityGate abortPipeline: true
                 }
             }
         }
+        stage('Publish to Nexus Artifactory') {
+            steps {
+            //
+            nexusArtifactUploader artifacts: [[artifactId: 'hridakapp', classifier: '', file: 'target/hridak-v2.war', type: 'war']], credentialsId: 'nexus', groupId: 'hridak-grp-repo', nexusUrl: '54.161.18.157:8081', nexusVersion: 'nexus3', protocol: 'http', repository: 'Hridak', version: '${BUILD_ID}'
+                }
+        }
+        stage('Notify Slack') {
+            steps {
+                echo 'Notifying Slack'
+                slackSend channel: '#jenkinscicd',
+                    color: '#439FE0',
+                    message: "*${currentBuild.currentResult}:* Job ${env.JOB_NAME} build ${env.BUILD_NUMBER} \n For More information see: ${env.BUILD_URL}"
 
-
+            }
+        }
     }
-
-
 }
