@@ -1,5 +1,0 @@
-com\hridak\account\modelTest\UserTest.class
-com\hridak\account\controllerTest\UserControllerTest.class
-com\hridak\account\controllerTest\SampleTest.class
-com\hridak\account\modelTest\RoleTest.class
-com\hridak\account\setup\StandaloneMvcTestViewResolver.class
