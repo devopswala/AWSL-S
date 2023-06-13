@@ -34,26 +34,26 @@ pipeline {
                 }
             }
         }
-        // stage('Sonar Scan') {
-        //     environment {
-        //         scannerHome = tool 'Sonar'
-        //     }
-        //     steps {
-        //         withSonarQubeEnv('SonarServer') {
-        //             sh '''${scannerHome}/bin/sonar-scanner -Dsonar.projectKey=hridak \
-        //             -Dsonar.projectName=Hridak \
-        //             -Dsonar.projectVersion=1.0 \
-        //             -Dsonar.sources=src/ \
-        //             -Dsonar.java.binaries=target/test-classes/com/hridak/account/controllerTest/ \
-        //             -Dsonar.junit.reportsPath=target/surefire-reports/ \
-        //             -Dsonar.jacoco.reportsPath=target/jacoco.exec \
-        //             -Dsonar.checkstyle.reportsPath=target/checkstyle-result.xml'''
-        //         }
-        //         timeout( time: 10, unit: 'MINUTES'){
-        //             waitForQualityGate abortPipeline: true
-        //         }
-        //     }
-        // }
+        stage('Sonar Scan') {
+            environment {
+                scannerHome = tool 'Sonar'
+            }
+            steps {
+                withSonarQubeEnv('SonarServer') {
+                    sh '''${scannerHome}/bin/sonar-scanner -Dsonar.projectKey=visualpathit \
+                    -Dsonar.projectName=visualpathit \
+                    -Dsonar.projectVersion=1.0 \
+                    -Dsonar.sources=src/ \
+                    -Dsonar.java.binaries=target/test-classes/com/visualpathit/account/controllerTest/ \
+                    -Dsonar.junit.reportsPath=target/surefire-reports/ \
+                    -Dsonar.jacoco.reportsPath=target/jacoco.exec \
+                    -Dsonar.checkstyle.reportsPath=target/checkstyle-result.xml'''
+                }
+                timeout( time: 10, unit: 'MINUTES'){
+                    waitForQualityGate abortPipeline: true
+                }
+            }
+        }
         // stage('Publish to Nexus Artifactory') {
         //     steps {
         //     //
@@ -63,7 +63,7 @@ pipeline {
         stage ('Docker Build') {
             steps {
                 script {
-                dockerimage = docker.build( appRegistry + ":${BUILD_NUMBER}", "./Docker-files/app/multistage/Dockerfile")
+                dockerimage = docker.build( appRegistry + ":${BUILD_NUMBER}", "./Docker-files/app/multistage/")
                 }
             }
         }
@@ -71,7 +71,7 @@ pipeline {
             steps {
                 script {
                 docker.withRegistry( hridakRegistry, registryCredential ){
-                    docker.image(dockerimage).push()
+                    dockerimage.push()
                 }
                 }
             }
