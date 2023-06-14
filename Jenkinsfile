@@ -4,6 +4,10 @@ pipeline {
         registryCredential = 'ecr:us-east-1:awsjenkinsiam'
         appRegistry = "179426988817.dkr.ecr.us-east-1.amazonaws.com/hridak"
         hridakRegistry = "https://179426988817.dkr.ecr.us-east-1.amazonaws.com"
+        cluster = "Hridak"
+        service = "hridaksvc"
+        taskfamily = "Hridak-TD"
+        desiredcount = "2"
     }
 
     tools {
@@ -73,6 +77,13 @@ pipeline {
                 docker.withRegistry( hridakRegistry, registryCredential ){
                     dockerimage.push()
                 }
+                }
+            }
+        }
+        stage ('Deploy app to ECS') {
+            steps {
+                withAWS(credentials: 'awsjenkinsiam', region: 'us-east-1') {
+                    sh 'aws ecs update-service --cluster ${cluster} --service ${service} --task-definition ${taskfamily}:1 --desired-count ${desiredcount}'
                 }
             }
         }
